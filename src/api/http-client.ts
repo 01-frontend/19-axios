@@ -6,12 +6,18 @@ import axios, {
   AxiosStatic,
 } from "axios";
 
-import { AppResponse } from "./types";
-
 /**
  * Reference: https://axios-http.com/docs/req_config
  * Api format: http://localhost:4000/api-profile/update
+ * Using interceptor: https://www.youtube.com/watch?v=ZcdJcZgf_94&ab_channel=EasyFrontend
  */
+
+export interface AppResponse<T = unknown> {
+  headers: Record<string, any>;
+  statusCode: number;
+  hasError: boolean;
+  data?: T;
+}
 
 export class HttpClient {
   protected axiosInstance: AxiosInstance;

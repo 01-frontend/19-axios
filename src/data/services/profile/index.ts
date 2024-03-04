@@ -1,4 +1,4 @@
-import { HttpClient } from "src/http-client";
+import { HttpClient } from "src/api/http-client";
 
 import { ProfilePayload, ProfileResponse, ProfileService } from "./types";
 
