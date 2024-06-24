@@ -3,20 +3,21 @@ import axios, {
   AxiosInstance,
   AxiosRequestConfig,
   AxiosResponse,
-  AxiosStatic,
+  AxiosStatic,,
 } from "axios";
 
-/**
- * Reference: https://axios-http.com/docs/req_config
- * Api format: http://localhost:4000/api-profile/update
- * Using interceptor: https://www.youtube.com/watch?v=ZcdJcZgf_94&ab_channel=EasyFrontend
- */
-
-export interface AppResponse<T = unknown> {
+export interface HttpResponse<T = unknown> {
   headers: Record<string, any>;
   statusCode: number;
   hasError: boolean;
   data?: T;
+}
+
+interface HandleRequestProps {
+  method: "get" | "post" | "put" | "patch" | "delete";
+  path: string;
+  payload?: any;
+  config?: AxiosRequestConfig;
 }
 
 export class HttpClient {
@@ -38,75 +39,99 @@ export class HttpClient {
     });
   }
 
+  private transformAxiosData<T>(response: AxiosResponse<T>): HttpResponse<T> {
+    return {
+      headers: response.headers,
+      statusCode: response.status,
+      data: response.data,
+      hasError: false,
+    };
+  }
+
+  private transformAxiosError<T>({ response }: AxiosError): HttpResponse<T> {
+    return {
+      headers: response?.headers || {},
+      statusCode: response?.status || 500,
+      data: response?.data as T,
+      hasError: true,
+    };
+  }
+
+  private async handleRequest<T>({
+    method,
+    path,
+    payload,
+    config,
+  }: HandleRequestProps): Promise<HttpResponse<T>> {
+    try {
+      const result = await this.axiosInstance[method]<T>(path, payload, config);
+      return this.transformAxiosData(result);
+    } catch (error) {
+      throw this.transformAxiosError<T>(error as AxiosError);
+    }
+  }
+
+  /**
+   * GET
+   */
+
   public async get<T>(
     path: string,
     config?: AxiosRequestConfig
-  ): Promise<AppResponse<T>> {
-    try {
-      const result = await this.axiosInstance.get<T>(path, config);
-      return HttpClient.transformAxiosData(result);
-    } catch (error) {
-      throw HttpClient.transformAxiosError<T>(error);
-    }
+  ): Promise<HttpResponse<T>> {
+    return await this.handleRequest<T>({
+      method: "get",
+      path,
+      config,
+    });
   }
+
+  /**
+   * POST
+   */
 
   public async post<T>(
     path: string,
     payload: any,
     config?: AxiosRequestConfig
-  ): Promise<AppResponse<T>> {
-    try {
-      const result = await this.axiosInstance.post<T>(path, payload, config);
-      return HttpClient.transformAxiosData(result);
-    } catch (error) {
-      throw HttpClient.transformAxiosError<T>(error);
-    }
+  ): Promise<HttpResponse<T>> {
+    return await this.handleRequest<T>({
+      method: "post",
+      path,
+      payload,
+      config,
+    });
   }
+
+  /**
+   * PUT
+   */
 
   public async put<T>(
     path: string,
     payload: any,
     config?: AxiosRequestConfig
-  ): Promise<AppResponse<T>> {
-    try {
-      const result = await this.axiosInstance.put<T>(path, payload, config);
-      return HttpClient.transformAxiosData(result);
-    } catch (error) {
-      throw HttpClient.transformAxiosError<T>(error);
-    }
+  ): Promise<HttpResponse<T>> {
+    return await this.handleRequest<T>({
+      method: "put",
+      path,
+      payload,
+      config,
+    });
   }
+
+  /**
+   * DELETE
+   */
 
   public async delete<T>(
     path: string,
     config?: AxiosRequestConfig
-  ): Promise<AppResponse<T>> {
-    try {
-      const result = await this.axiosInstance.delete<T>(path, config);
-      return HttpClient.transformAxiosData(result);
-    } catch (error) {
-      throw HttpClient.transformAxiosError<T>(error);
-    }
-  }
-
-  private static transformAxiosData<T>(
-    response: AxiosResponse<T>
-  ): AppResponse<T> {
-    return {
-      headers: response.headers,
-      statusCode: response.status,
-      hasError: false,
-      data: response.data,
-    };
-  }
-
-  private static transformAxiosError<T>({
-    response,
-  }: AxiosError): AppResponse<T> {
-    return {
-      headers: response.headers,
-      statusCode: response.status,
-      hasError: true,
-      data: response.data as T,
-    };
+  ): Promise<HttpResponse<T>> {
+    return await this.handleRequest<T>({
+      method: "delete",
+      path,
+      config,
+    });
   }
 }
